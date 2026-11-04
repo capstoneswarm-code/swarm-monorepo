@@ -109,13 +109,13 @@ class Keys:
                 self.quit = True
                 return
             if char == "w":
-                self.left, self.right = self.speed, -self.speed
-            elif char == "s":
-                self.left, self.right = -self.speed, self.speed
-            elif char == "a":
-                self.left, self.right = -self.speed, -self.speed
-            elif char == "d":
                 self.left, self.right = self.speed, self.speed
+            elif char == "s":
+                self.left, self.right = -self.speed, -self.speed
+            elif char == "a":
+                self.left, self.right = -self.speed, self.speed
+            elif char == "d":
+                self.left, self.right = self.speed, -self.speed
             else:
                 self.stop()
                 continue

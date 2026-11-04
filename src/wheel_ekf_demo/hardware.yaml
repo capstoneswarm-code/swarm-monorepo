@@ -7,10 +7,10 @@ left_motor: 1
 right_motor: 2
 # Change a command sign if Q or W turns that wheel backward.
 left_command_sign: 1
-right_command_sign: 1
+right_command_sign: -1
 # Independently check telemetry: forward wheel rolling must read positive.
 left_encoder_sign: 1
-right_encoder_sign: 1
+right_encoder_sign: -1
 
 # EXAMPLE: distance between left/right wheel centerlines, in meters.
 # Measure your chassis and replace 0.16.
