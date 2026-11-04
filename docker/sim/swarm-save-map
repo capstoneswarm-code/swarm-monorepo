@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -eo pipefail
+# ROS's setup scripts are sourced before enabling nounset.
+# shellcheck source=/dev/null
+source /opt/ros/jazzy/setup.bash
+set -u
+
+if (($# > 1)); then
+    echo 'Usage: swarm-save-map [output-prefix]' >&2
+    exit 2
+fi
+prefix="${1:-/workspace/maps/first_map}"
+mkdir -p "$(dirname "$prefix")"
+# Allow discovery and map delivery to complete under software-rendering load.
+exec ros2 run nav2_map_server map_saver_cli -f "$prefix" --ros-args \
+    -p use_sim_time:=true \
+    -p save_map_timeout:=10.0

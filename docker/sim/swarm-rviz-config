@@ -1,0 +1,83 @@
+#!/usr/bin/env python3
+"""Adapt Nav2's view for manual mapping on the browser desktop."""
+
+import os
+from copy import deepcopy
+from pathlib import Path
+from typing import Any
+
+import yaml
+from ament_index_python.packages import get_package_share_directory
+
+# RViz plugin settings have a dynamic, upstream-defined YAML schema.
+type RvizConfig = dict[str, Any]
+
+DEFAULT_SCREEN = "1600x900x24"
+
+
+def parse_screen_size(value: str) -> tuple[int, int]:
+    """Read the usable width and height from Xvfb's WIDTHxHEIGHTxDEPTH syntax."""
+    try:
+        width, height, depth = (int(part) for part in value.split("x"))
+    except ValueError as error:
+        raise ValueError(f"Invalid SWARM_SCREEN {value!r}; expected WIDTHxHEIGHTxDEPTH") from error
+
+    if width <= 2 or height <= 30 or depth <= 0:
+        raise ValueError("SWARM_SCREEN must leave room for the RViz window and its decorations")
+    return width, height
+
+
+def create_mapping_view(template: RvizConfig, *, width: int, height: int) -> RvizConfig:
+    """Create a compact mapping view without modifying the upstream template."""
+    config = deepcopy(template)
+    config["Panels"] = [panel for panel in config["Panels"] if panel["Name"] == "Displays"]
+    manager = config["Visualization Manager"]
+    manager["Displays"] = [
+        display
+        for display in manager["Displays"]
+        if display["Name"] in {"Grid", "RobotModel", "TF", "LaserScan", "Map"}
+    ]
+    for display in manager["Displays"]:
+        display["Enabled"] = display["Name"] != "TF"
+    manager["Tools"] = [
+        tool
+        for tool in manager["Tools"]
+        if tool["Class"]
+        in {
+            "rviz_default_plugins/Interact",
+            "rviz_default_plugins/MoveCamera",
+            "rviz_default_plugins/Select",
+            "rviz_default_plugins/FocusCamera",
+            "rviz_default_plugins/Measure",
+        }
+    ]
+    manager["Global Options"]["Frame Rate"] = 15
+    manager["Views"]["Current"].update({"X": 1.5, "Y": 0.0, "Scale": 60})
+    config["Window Geometry"] = {
+        "X": width // 2,
+        "Y": 0,
+        "Width": width - width // 2 - 2,
+        "Height": height - 30,
+        "Hide Left Dock": False,
+        "Hide Right Dock": True,
+    }
+    return config
+
+
+def main() -> None:
+    """Write the generated view and print its path for the simulation launcher."""
+    source = Path(get_package_share_directory("nav2_bringup")) / "rviz/nav2_default_view.rviz"
+    template = yaml.safe_load(source.read_text(encoding="utf-8"))
+    if not isinstance(template, dict):
+        raise ValueError(f"Expected an RViz configuration mapping in {source}")
+
+    width, height = parse_screen_size(os.environ.get("SWARM_SCREEN", DEFAULT_SCREEN))
+    config = create_mapping_view(template, width=width, height=height)
+    output = Path.home() / ".config/swarm/mapping.rviz"
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(yaml.safe_dump(config, sort_keys=False), encoding="utf-8")
+    print(output)
+
+
+if __name__ == "__main__":
+    main()

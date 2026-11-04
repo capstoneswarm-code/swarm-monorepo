@@ -1,0 +1,36 @@
+services:
+  sim:
+    build:
+      context: .
+      dockerfile: docker/sim/Dockerfile
+    init: true
+    user: "${SWARM_UID:-1000}:${SWARM_GID:-1000}"
+    ports:
+      - "127.0.0.1:${SWARM_DESKTOP_PORT:-6080}:6080"
+    volumes:
+      - .:/workspace
+    environment:
+      HOME: /tmp/swarm-home
+      DISPLAY: :99
+      QT_QPA_PLATFORM: xcb
+      QT_X11_NO_MITSHM: "1"
+      LIBGL_ALWAYS_SOFTWARE: "1"
+      ROS_DOMAIN_ID: "42"
+      ROS_AUTOMATIC_DISCOVERY_RANGE: LOCALHOST
+      SWARM_AUTOSTART_SIM: ${SWARM_AUTOSTART_SIM:-1}
+      SWARM_DESKTOP_PORT: ${SWARM_DESKTOP_PORT:-6080}
+      SWARM_SCREEN: ${SWARM_SCREEN:-1600x900x24}
+    shm_size: 1gb
+    cpus: 4
+    mem_limit: 6g
+    working_dir: /workspace
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:6080/vnc.html', timeout=3).read(1)"
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 6

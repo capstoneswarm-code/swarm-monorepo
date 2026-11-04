@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+set -eo pipefail
+# ROS's setup scripts are sourced before enabling nounset.
+# shellcheck source=/dev/null
+source /opt/ros/jazzy/setup.bash
+set -u
+
+topic="${SWARM_CMD_VEL_TOPIC:-/cmd_vel}"
+# Query the live graph so a newly started CLI daemon cannot return a stale snapshot.
+if ! message_type="$(ros2 topic type --no-daemon --spin-time 2 "$topic" 2>/dev/null)"; then
+    echo "Cannot find $topic. Start swarm-sim and wait for the robot to load." >&2
+    exit 1
+fi
+
+case "$message_type" in
+    geometry_msgs/msg/Twist) stamped=false ;;
+    geometry_msgs/msg/TwistStamped) stamped=true ;;
+    *)
+        echo "Expected one Twist or TwistStamped type on $topic; found: $message_type" >&2
+        exit 1
+        ;;
+esac
+
+exec ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args \
+    -r "cmd_vel:=$topic" \
+    -p use_sim_time:=true \
+    -p "stamped:=$stamped" \
+    -p speed:=0.2 \
+    -p turn:=0.5 \
+    "$@"

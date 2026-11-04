@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+pids=()
+critical_pids=()
+
+cleanup() {
+    trap - EXIT INT TERM
+    if ((${#pids[@]})); then
+        kill "${pids[@]}" 2>/dev/null || true
+        wait "${pids[@]}" 2>/dev/null || true
+    fi
+}
+trap cleanup EXIT
+trap 'exit 0' INT TERM
+
+mkdir -p "$HOME"
+cat >"$HOME/.bashrc" <<'BASHRC'
+source /opt/ros/jazzy/setup.bash
+cd /workspace
+BASHRC
+
+export DISPLAY="${DISPLAY:-:99}"
+Xvfb "$DISPLAY" -screen 0 "${SWARM_SCREEN:-1600x900x24}" \
+    -nolisten tcp +extension GLX +render -noreset &
+pids+=("$!")
+critical_pids+=("$!")
+
+display_ready=0
+for ((attempt = 0; attempt < 100; attempt++)); do
+    if xdpyinfo -display "$DISPLAY" >/dev/null 2>&1; then
+        display_ready=1
+        break
+    fi
+    if ! kill -0 "${pids[0]}" 2>/dev/null; then
+        echo 'The virtual display failed to start.' >&2
+        exit 1
+    fi
+    sleep 0.1
+done
+if ((display_ready == 0)); then
+    echo 'Timed out waiting for the virtual display.' >&2
+    exit 1
+fi
+
+openbox-session &
+pids+=("$!")
+critical_pids+=("$!")
+
+x11vnc -display "$DISPLAY" -forever -shared -nopw -localhost \
+    -rfbport 5900 -quiet &
+pids+=("$!")
+critical_pids+=("$!")
+
+websockify --web=/usr/share/novnc/ 0.0.0.0:6080 localhost:5900 &
+pids+=("$!")
+critical_pids+=("$!")
+
+xterm -title 'SWARM terminal: swarm-sim / swarm-teleop / swarm-save-map' \
+    -geometry 100x16+10+10 -e bash -i &
+pids+=("$!")
+
+echo "SWARM desktop: http://localhost:${SWARM_DESKTOP_PORT:-6080}/vnc.html?autoconnect=true&resize=scale"
+echo 'Desktop health does not imply that Gazebo and SLAM are ready; inspect ROS topics.'
+if [[ "${SWARM_AUTOSTART_SIM:-1}" == 1 ]]; then
+    swarm-sim &
+    pids+=("$!")
+fi
+
+# Keep the desktop available if the optional simulation exits so it can be diagnosed.
+wait -n "${critical_pids[@]}"

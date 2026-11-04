@@ -1,0 +1,25 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-include = ["docker/sim/swarm-rviz-config"]
+# Existing hardware tools and upstream drivers are outside this review's scope.
+extend-exclude = [
+    "src/rplidar_test",
+    "src/sllidar_ros2",
+    "build",
+    "install",
+    "log",
+    "maps",
+    "bags",
+    "artifacts",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ANN"]
+# Dynamic external formats, such as RViz's plugin YAML, can require Any.
+ignore = ["ANN401"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

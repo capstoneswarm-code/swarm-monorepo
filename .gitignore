@@ -1,3 +1,62 @@
+# ROS 2 / colcon build output, including nested workspaces.
 build/
 install/
 log/
+
+# Generated simulation output. Put reusable worlds and reference fixtures elsewhere.
+/maps/
+/bags/
+/artifacts/
+*.log
+*.bag
+*.bag.active
+*.mcap
+*.db3
+*.db3-shm
+*.db3-wal
+
+# Python bytecode, packaging output, and virtual environments.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+.venv/
+venv/
+
+# Tool caches and generated test / coverage reports.
+.ruff_cache/
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
+.tox/
+.nox/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Local environment values and Compose overrides; sanitized examples are shareable.
+.env
+.env.*
+!.env.example
+!.env.*.example
+/compose.override.yaml
+/compose.override.yml
+/docker-compose.override.yaml
+/docker-compose.override.yml
+
+# Local ROS / Gazebo state.
+.ros/
+.gazebo/
+.gz/
+
+# Personal IDE settings, operating system files, and editor backups.
+.idea/
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+*~
+*.swp
+*.swo

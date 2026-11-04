@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -eo pipefail
+# ROS's setup scripts are sourced before enabling nounset.
+# shellcheck source=/dev/null
+source /opt/ros/jazzy/setup.bash
+set -u
+rviz_config="${SWARM_RVIZ_CONFIG:-$(swarm-rviz-config)}"
+
+# Nav2 supplies the first test world and robot; no physical hardware is required.
+exec ros2 launch nav2_bringup tb3_simulation_launch.py \
+    slam:=True \
+    use_sim_time:=True \
+    headless:="${SWARM_HEADLESS:-False}" \
+    use_rviz:="${SWARM_RVIZ:-True}" \
+    rviz_config_file:="$rviz_config" \
+    "$@"
