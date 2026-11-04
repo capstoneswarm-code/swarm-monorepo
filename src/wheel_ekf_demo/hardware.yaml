@@ -1,0 +1,49 @@
+# Edit these values to match the physical robot before floor testing.
+serial_port: /dev/serial/by-id/usb-1a86_USB_Serial-if00-port0
+baudrate: 115200
+
+# EXAMPLE channel mapping, not detected from your wiring. Channels are 1..4.
+left_motor: 1
+right_motor: 2
+# Change a command sign if Q or W turns that wheel backward.
+left_command_sign: 1
+right_command_sign: 1
+# Independently check telemetry: forward wheel rolling must read positive.
+left_encoder_sign: 1
+right_encoder_sign: 1
+
+# EXAMPLE: distance between left/right wheel centerlines, in meters.
+# Measure your chassis and replace 0.16.
+track_width_m: 0.12
+
+# Nominal 80 mm/s = 0.08 m/s. Requires correct board encoder/motor settings.
+speed_m_s: 1
+# Optional measured correction: physical wheel speed / board-reported speed.
+# Prefer correcting the board's gearbox/encoder/wheel-diameter settings.
+left_speed_scale: 1.0
+right_speed_scale: 1.0
+
+# Terminal keys set each wheel's direction. All targets expire after this
+# many seconds without a Q/A/W/S event. Holding a key generates repeats.
+key_timeout_s: 0.1
+sensor_timeout_s: 0.5
+startup_timeout_s: 10.0
+
+# MPU6050 connected DIRECTLY to the Pi's GPIO I2C bus.
+i2c_bus: 1
+imu_address: 0x68
+gyro_calibration_s: 3.0
+# Rotation taking sensor-frame vectors INTO body axes: x forward, y left,
+# z up. R = Rz(yaw) * Ry(pitch) * Rx(roll). Identity is ONLY correct when
+# the sensor's labeled axes match the robot body. Angles below are degrees.
+imu_mount_rpy_deg: [0.0, 0.0, 0.0]
+
+# Initial tuning values: standard deviations, not variances.
+# Replace using stationary/motion measurements on your robot.
+wheel_speed_std_m_s: 0.025
+lateral_speed_std_m_s: 0.03
+wheel_yaw_rate_std_rad_s: 0.15
+gyro_std_rad_s: 0.02
+# Reporting only: ignore filtered speed below this threshold in travel
+# integration. Does not change EKF pose or conceal position drift.
+report_speed_deadband_m_s: 0.005
