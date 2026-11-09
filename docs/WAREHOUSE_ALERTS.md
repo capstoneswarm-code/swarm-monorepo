@@ -56,6 +56,33 @@ a physically narrow passage. Temporal confirmation remains future work.
 Graph analysis uses NetworkX's [bridge detection](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.bridges.bridges.html)
 and [weighted shortest paths](https://networkx.org/documentation/stable/reference/algorithms/generated/networkx.algorithms.shortest_paths.generic.shortest_path.html).
 
+## Ranking policy
+
+`rank_alerts` groups impacts by aisle, retaining the underlying added-region IDs.
+One physical obstacle can affect multiple aisles. Other spatial changes remain
+separate alerts; a moved object is still an addition plus a removal, not object
+recognition. Current prototype levels are:
+
+| Level | Meaning |
+| --- | --- |
+| Critical | Clearing the blocked aisle would restore entry access to a region |
+| High | Aisle blocked, but clearing it alone adds no entry-reachable region |
+| Review | A detected change overlaps an aisle with incomplete observations |
+| Medium | Aisle narrowed, with a route remaining for the model footprint |
+| Low | Added spatial change without an attributed aisle capacity impact |
+| Info | Removed obstacle |
+
+Within each level, order by restored region area, bridge status after other
+blockages, detour distance, lost width, changed area, then stable lexical ID.
+These are documented prototype rules, not thresholds validated with operators.
+Each alert includes reasons and measurements. Per-alert restored areas can overlap:
+the two-blockage scenario has two alternative repairs, each restoring the same
+24 m². Use the global unreachable area, never the sum of per-alert areas.
+
+Every JSON report is marked `unconfirmed_snapshot`. The aisle IDs are stable in
+the declared layout; pixel-region IDs are not stable across time. No temporal
+tracking, persistent confirmation, or notifications are implied by a high rank.
+
 ## Planned delivery stages
 
 1. Explicit warehouse geometry and repeatable fixtures.
