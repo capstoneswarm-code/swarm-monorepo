@@ -23,6 +23,21 @@ build commands, everyday startup, driving, map saving, shutdown, troubleshooting
 recording, and attribution. macOS remains unverified
 until this setup is tested on a Mac.
 
+## Physical robot mapping
+
+The Raspberry Pi hardware demo targets ROS 2 Kilted. Follow the
+[hardware mapping instructions](src/wheel_ekf_demo/README.md) to start manual
+motor control, wheel/gyro sensor fusion, the LiDAR driver, SLAM Toolbox, and the
+browser map viewer.
+
+- `src/wheel_ekf_demo`: the physical robot's control and mapping pipeline, hardware
+  configuration, and unit tests.
+- `src/fusion_test`: a synthetic wheel/gyro example for testing EKF sensor fusion.
+- `src/motor_test`: a short test for an individual motor on the physical board.
+
+The Jazzy simulation and Kilted hardware demo run in separate environments. The
+simulation uses ROS domain 42; the hardware instructions use domain 78.
+
 ## Physical LiDAR tools
 
 - `src/sllidar_ros2`: the upstream Slamtec ROS 2 driver submodule.

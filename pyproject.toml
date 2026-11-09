@@ -2,10 +2,13 @@
 target-version = "py312"
 line-length = 100
 extend-include = ["docker/sim/swarm-rviz-config"]
-# Existing hardware tools and upstream drivers are outside this review's scope.
+# Hardware tools and upstream drivers are outside the simulation lint scope.
 extend-exclude = [
+    "src/fusion_test",
+    "src/motor_test",
     "src/rplidar_test",
     "src/sllidar_ros2",
+    "src/wheel_ekf_demo",
     "build",
     "install",
     "log",

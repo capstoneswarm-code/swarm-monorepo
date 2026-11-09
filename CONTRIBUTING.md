@@ -5,9 +5,11 @@
 The simulation runs Python 3.12 from Ubuntu 24.04 / ROS 2 Jazzy. Use features
 supported by that interpreter even if the host has a newer Python version.
 
-The current style pass covers the added simulation setup. Ruff excludes the
-existing hardware viewer and upstream LiDAR driver. Review and update that scope
-explicitly before extending checks to those files.
+The current style checks cover the simulation setup. Ruff excludes the hardware
+demos in `src/fusion_test`, `src/motor_test`, and `src/wheel_ekf_demo`, the existing
+hardware viewer, and the upstream LiDAR driver. Review and update that scope
+explicitly before extending checks to those files. Apply hardware style changes
+as a separate task so merging the simulation does not reformat its control code.
 
 ## Python
 
