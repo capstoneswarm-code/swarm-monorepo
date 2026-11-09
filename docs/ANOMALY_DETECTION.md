@@ -89,7 +89,8 @@ known changes, not generated LiDAR observations.
 already aligned maps. Dimensions, resolution, and origin must match (numeric
 tolerance 1e-9; yaw is compared modulo a full turn). The caller must also confirm
 the maps refer to the same physical coordinate frame: identical metadata alone
-cannot establish this. Automatic registration and resampling are future work.
+cannot establish this. The Python alignment API below can resample using a known
+transform. Estimating that transform automatically is future work.
 
 An added obstacle is reference-free / observed-occupied. A removed obstacle is
 reference-occupied / observed-free. Unknown cells in either map are excluded.
@@ -113,11 +114,37 @@ Detected regions are candidate differences. Misalignment, SLAM distortion, and
 sensor noise can create them without a physical change. Synthetic tests verify
 the comparison rules, not real-world detection accuracy or SLAM quality.
 
+## Resampling with a known transform
+
+`swarm_anomaly.alignment.resample_to_reference(reference, observed, transform=...)`
+places an observation on the reference grid before calling `compare_maps`.
+It accepts different image sizes, resolutions, and origin poses. Supply a
+`RigidTransform(x_m, y_m, yaw_rad)` describing **observed frame to reference frame**:
+
+```text
+p_reference = rotation(yaw_rad) * p_observed + [x_m, y_m]
+```
+
+Yaw is counterclockwise in radians. An identity `RigidTransform()` is appropriate
+only if the maps already share a physical coordinate frame. Their grid origins
+can still differ. Each map's own YAML origin is applied separately from this
+between-frame transform; do not include the grid origin a second time.
+
+Every reference cell centre samples the containing observed cell. Unknown input
+cells and samples outside the observed image stay unknown. The returned map has
+the reference's geometry, so reported change locations remain in the reference
+frame. Only the reference footprint is evaluated; changes beyond it are excluded.
+
+This is categorical nearest-cell sampling, with no interpolation of occupancy
+values. Numerical boundary roundoff within 1e-9 cells is snapped to the boundary.
+Sampling a fine map onto a coarse grid can lose small obstacles; arbitrary-angle
+rotation can introduce raster differences. This does not correct SLAM distortion
+or validate the supplied transform. Use coverage and the overlay to review results.
+
 ## Next milestones
 
-1. Add and validate alignment/resampling using synthetic maps with known transforms.
-   Independently saved SLAM maps will often have different origins and dimensions;
-   this version intentionally rejects those pairs.
+1. Integrate known-transform resampling into the CLI and add rotated/shifted fixtures.
+   Then investigate automatic registration and robustness to mapping noise.
 2. Obtain exported physical maps with their YAML metadata and an agreed reference
    layout. Measure mounting transforms and check calibration with the hardware team.
 3. Validate against labelled additions/removals and unchanged repeated runs. Measure
