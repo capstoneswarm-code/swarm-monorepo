@@ -5,9 +5,9 @@ Use idiomatic Python 3.12 with useful function annotations, a main entry point f
 scripts, and the project's formatting and lint checks. Keep Bash scripts consistent
 with ShellCheck and shfmt.
 
-Limit edits to the requested scope. The current cleanup covers the simulation
-setup; it does not include the existing LiDAR viewer, the older `18500-swarm` repo,
-upstream submodules, or installed libraries.
+Limit edits to the requested scope. Current development covers the simulation
+setup and offline anomaly detector; it does not include the existing LiDAR viewer,
+the older `18500-swarm` repo, upstream submodules, or installed libraries.
 
 When commits are requested, make each commit a coherent, validated change with a
 plain, descriptive imperative subject without prefixes such as `feat:` or `chore:`.

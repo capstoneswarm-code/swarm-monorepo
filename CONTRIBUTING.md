@@ -5,8 +5,9 @@
 The simulation runs Python 3.12 from Ubuntu 24.04 / ROS 2 Jazzy. Use features
 supported by that interpreter even if the host has a newer Python version.
 
-The current style checks cover the simulation setup. Ruff excludes the hardware
-demos in `src/fusion_test`, `src/motor_test`, and `src/wheel_ekf_demo`, the existing
+The current style checks cover the simulation setup and offline anomaly detector.
+Ruff excludes the hardware demos in `src/fusion_test`, `src/motor_test`, and
+`src/wheel_ekf_demo`, the existing
 hardware viewer, and the upstream LiDAR driver. Review and update that scope
 explicitly before extending checks to those files. Apply hardware style changes
 as a separate task so merging the simulation does not reformat its control code.
@@ -55,6 +56,10 @@ python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements-dev.txt
 ```
+
+For the offline anomaly detector, also run `python -m pip install -e .` and
+`python -m unittest discover -s tests/anomaly -v`. Its package and tests use the same
+Python style checks. See [the anomaly-detection guide](docs/ANOMALY_DETECTION.md).
 
 The pinned packages supply Ruff, ShellCheck, and shfmt. See the
 [Ruff configuration documentation](https://docs.astral.sh/ruff/configuration/),
