@@ -7,8 +7,8 @@ supported by that interpreter even if the host has a newer Python version.
 
 The current style checks cover the simulation setup and offline anomaly detector.
 Ruff excludes the hardware demos in `src/fusion_test`, `src/motor_test`, and
-`src/wheel_ekf_demo`, the existing
-hardware viewer, and the upstream LiDAR driver. Review and update that scope
+`src/wheel_ekf_demo`, the existing hardware viewer, and the upstream LiDAR driver.
+Review and update that scope
 explicitly before extending checks to those files. Apply hardware style changes
 as a separate task so merging the simulation does not reformat its control code.
 
