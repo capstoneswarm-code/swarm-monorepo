@@ -11,7 +11,11 @@ cd ~/Documents/swarm-mono/
 
 3. In one terminal run `python3 src/wheel_ekf_demo/robot_demo.py --config src/wheel_ekf_demo/hardware.yaml` to start manual motor control and sensor data fusion
 
-4. In the other terminal run `ros2 launch "$PWD/src/wheel_ekf_demo/mapping.launch.py"` to start slam-toolbox and map publishing
+4. In the other terminal run the following to start slam-toolbox and map publishing:
+```bash
+source ~/Documents/swarm-mono/install/setup.bash
+ros2 launch "$PWD/src/wheel_ekf_demo/mapping.launch.py"
+```
 
 5. On your local machine run the following to start the visualization script:
 ```bash
