@@ -12,10 +12,16 @@ dependencies = ["numpy>=2,<3", "Pillow>=11,<13", "PyYAML>=6,<7", "networkx>=3.4,
 [project.scripts]
 swarm-anomaly = "swarm_anomaly.cli:main"
 
+[tool.setuptools]
+include-package-data = false
+
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["swarm_anomaly*"]
 namespaces = false
+
+[tool.setuptools.package-data]
+swarm_anomaly = ["templates/*.html"]
 
 [tool.ruff]
 target-version = "py312"

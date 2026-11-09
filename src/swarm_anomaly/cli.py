@@ -11,6 +11,7 @@ from swarm_anomaly.detection import compare_maps
 from swarm_anomaly.maps import OccupancyMap, load_map, save_map
 from swarm_anomaly.synthetic import make_scenarios
 from swarm_anomaly.visualization import render_comparison
+from swarm_anomaly.warehouse_demo import write_warehouse_demo
 
 
 def _prepare_output(directory: Path, names: Iterable[str]) -> None:
@@ -105,6 +106,21 @@ def _write_comparison(
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Compare aligned occupancy maps without ROS")
     commands = parser.add_subparsers(dest="command", required=True)
+    warehouse = commands.add_parser(
+        "warehouse-demo", help="Generate ranked warehouse alerts and a local visualizer"
+    )
+    warehouse.add_argument("--output", type=Path, required=True)
+    warehouse.add_argument(
+        "--scenario",
+        default="ranked",
+        help="Warehouse case, e.g. ranked, detour, joint_blockages, unknown",
+    )
+    warehouse.add_argument(
+        "--required-width",
+        type=float,
+        default=0.6,
+        help="Footprint plus clearance in metres (default: 0.6)",
+    )
     fixtures = commands.add_parser("fixtures", help="Generate a room and known change scenarios")
     fixtures.add_argument(
         "--output", type=Path, required=True, help="Directory for synthetic map pairs"
@@ -137,6 +153,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.command == "fixtures":
             _write_fixtures(args.output)
+        elif args.command == "warehouse-demo":
+            write_warehouse_demo(
+                args.output, scenario=args.scenario, required_width=args.required_width
+            )
         else:
             transform = RigidTransform(*args.transform) if args.transform is not None else None
             _write_comparison(

@@ -183,6 +183,12 @@ coverage still produces `status: no_comparable_cells`, not an unchanged-room cla
 
 ## Next milestones
 
+The [warehouse alert demo](WAREHOUSE_ALERTS.md) now implements explicit aisle
+geometry, clearance and connectivity analysis, severity ranking with reasons, and
+an interactive operator map. It builds on the added/removed-region detector here;
+its graph requires a declared layout and aligned maps. It does not infer warehouse
+topology automatically or identify object types.
+
 1. Add repeatable noise and alignment-error experiments to measure false detections.
    Investigate automatic registration with an explicit failure/uncertainty outcome.
 2. Obtain exported physical maps with their YAML metadata and an agreed reference
@@ -193,6 +199,9 @@ coverage still produces `status: no_comparable_cells`, not an unchanged-room cla
 5. Evaluate SLAM accuracy separately against independently measured ground truth.
    Synthetic comparison tests and a self-comparison of a Gazebo map do not establish
    IoU, wall error, or anomaly-detection accuracy on the physical robot.
+6. Add persistent alert events and a dry-run delivery log, then email/SMS delivery
+   with deduplication, cooldowns, and chosen recipients. Snapshot ranking alone
+   does not establish that an obstruction persists.
 
 Development was exercised on Linux with Python 3.12. The detector has no ROS, Docker,
 or OS-specific runtime code; macOS operation still needs a test on a Mac.

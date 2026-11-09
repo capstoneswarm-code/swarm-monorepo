@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SWARM · $title</title>
+  <style>
+    :root { color-scheme: light; font: 16px/1.5 system-ui, sans-serif; color: #17314a; background: #edf1f4; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    header { padding: 26px 32px; background: #17314a; color: white; }
+    .eyebrow { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: #a9c6d8; }
+    h1 { font-size: 28px; line-height: 1.2; margin: 8px 0; }
+    header p { margin: 0; color: #c7d7e1; }
+    main { max-width: 1450px; margin: auto; padding: 24px; }
+    .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 18px; }
+    .metric { background: white; border-radius: 10px; padding: 14px 20px; border: 1px solid #dce3e8; }
+    .metric strong { font-size: 26px; display: block; }
+    .metric span { font-size: 13px; color: #536b7f; }
+    .notice { padding: 12px 16px; background: #fff6dd; border-left: 4px solid #b58924; margin-bottom: 20px; font-size: 14px; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(320px, 1fr); gap: 22px; align-items: start; }
+    .map-panel, aside { background: white; border: 1px solid #dce3e8; border-radius: 12px; overflow: hidden; }
+    .panel-heading { padding: 16px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid #e3e9ed; }
+    h2 { font-size: 18px; margin: 0; }
+    .panel-heading label { font-size: 13px; white-space: nowrap; }
+    .map-wrap { padding: 16px; }
+    svg { display: block; width: 100%; height: auto; }
+    .region-label { font: 12px system-ui, sans-serif; fill: #17314a; stroke: #f7f5ef; stroke-width: 2px; paint-order: stroke; }
+    .alert-marker { cursor: pointer; outline: none; }
+    .alert-marker.selected circle, .alert-marker:focus circle { stroke: #172331; stroke-width: 5; }
+    .alternate { display: none; }
+    .alternate.selected { display: block; }
+    .legend { padding: 0 20px 14px; display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: #536b7f; }
+    .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 5px; vertical-align: middle; }
+    .map-summary { padding: 16px 20px; border-top: 1px solid #e3e9ed; font-size: 14px; }
+    .map-summary p { margin: 4px 0; }
+    .map-summary a { color: #256caa; margin-right: 14px; }
+    .alerts { padding: 12px; max-height: 730px; overflow-y: auto; }
+    .alert-card { display: block; width: 100%; text-align: left; font: inherit; color: inherit; background: white; border: 1px solid #dce3e8; border-left: 5px solid var(--severity); border-radius: 8px; padding: 14px; margin-bottom: 12px; cursor: pointer; }
+    .alert-card:hover { background: #f8fafc; }
+    .alert-card.selected { background: #f0f6fa; outline: 2px solid #17314a; }
+    .alert-card strong { display: block; margin: 6px 0; font-size: 16px; }
+    .badge { color: var(--severity); font-size: 11px; font-weight: 800; letter-spacing: .06em; }
+    .category { display: block; text-transform: capitalize; font-size: 13px; color: #536b7f; }
+    .reason { display: block; margin-top: 8px; font-size: 13px; }
+    .measurement { display: block; margin-top: 10px; font-size: 12px; color: #536b7f; }
+    .empty { padding: 20px; color: #536b7f; }
+    footer { padding: 20px 0; color: #536b7f; font-size: 13px; }
+    button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid #256caa; outline-offset: 3px; }
+    @media (max-width: 900px) { .workspace { grid-template-columns: 1fr; } .alerts { max-height: none; } main { padding: 14px; } header { padding: 22px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="eyebrow">SWARM / warehouse monitoring</div>
+    <h1>$title</h1>
+    <p>Scenario: $scenario · synthetic data · single snapshot</p>
+  </header>
+  <main>
+    <section class="metrics" aria-label="Snapshot summary">
+      <div class="metric"><strong>$alert_count</strong><span>Ranked alerts</span></div>
+      <div class="metric"><strong>$inaccessible_area m²</strong><span>Regions inaccessible from $entry_label</span></div>
+      <div class="metric"><strong>$coverage</strong><span>Comparable map coverage</span></div>
+    </section>
+    <div class="notice">$warning</div>
+    <div class="workspace">
+      <section class="map-panel">
+        <div class="panel-heading"><h2>Warehouse map</h2><label><input id="show-graph" type="checkbox" checked> Show aisle graph</label></div>
+        <div class="map-wrap">$map_svg</div>
+        <div class="legend">
+          <span><i style="background:#bd2441"></i>Blocked / critical</span>
+          <span><i style="background:#bd8410"></i>Restricted</span>
+          <span><i style="background:#7954a8"></i>Unknown / review</span>
+          <span><i style="background:#149474"></i>Selected alternate route</span>
+        </div>
+        <div class="map-summary">
+          <p><strong>Inaccessible regions:</strong> $inaccessible</p>
+          <p>Model travel width: $clearance m. Select an alert to locate it and inspect any alternate route.</p>
+          <p><a href="alerts.json">Alert data</a><a href="map.png">Exported map image</a></p>
+        </div>
+      </section>
+      <aside>
+        <div class="panel-heading"><h2>Alerts, highest impact first</h2></div>
+        <div class="alerts">$cards</div>
+      </aside>
+    </div>
+    <footer>Alerts are unconfirmed snapshot estimates. Email/SMS delivery is planned as step 5.</footer>
+  </main>
+  <script>
+    const cards = document.querySelectorAll(".alert-card");
+    const markers = document.querySelectorAll(".alert-marker");
+    const routes = document.querySelectorAll(".alternate");
+    function selectAlert(id, scrollToCard = false) {
+      for (const element of [...cards, ...markers, ...routes]) {
+        const selected = element.dataset.alert === id;
+        element.classList.toggle("selected", selected);
+        if (element.matches(".alert-card")) {
+          element.setAttribute("aria-pressed", String(selected));
+          if (selected && scrollToCard) element.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+      }
+    }
+    for (const card of cards) card.addEventListener("click", () => selectAlert(card.dataset.alert));
+    for (const marker of markers) {
+      marker.addEventListener("click", () => selectAlert(marker.dataset.alert, true));
+      marker.addEventListener("keydown", (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          selectAlert(marker.dataset.alert, true);
+        }
+      });
+    }
+    document.querySelector("#show-graph").addEventListener("change", (event) => {
+      document.querySelector("#aisle-graph").style.display = event.target.checked ? "" : "none";
+    });
+  </script>
+</body>
+</html>

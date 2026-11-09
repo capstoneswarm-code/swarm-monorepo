@@ -13,6 +13,12 @@ overlays. It runs without ROS or robot hardware.
 See [the anomaly-detection guide](docs/ANOMALY_DETECTION.md) for installation,
 example commands, tests, supported map formats, and current limitations.
 
+The [warehouse alert demo](docs/WAREHOUSE_ALERTS.md) adds explicit aisles and
+intersections, blockage/bridge/detour analysis, ranked explanations, and an
+interactive map. Run `swarm-anomaly warehouse-demo --output artifacts/warehouse-demo/ranked`
+after installation, then open the generated `index.html`. It uses synthetic maps;
+live integration and email/SMS notifications remain future work.
+
 ## Simulation
 
 The first development milestone is one simulated robot building and saving a map.
