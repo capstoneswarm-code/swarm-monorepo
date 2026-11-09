@@ -230,7 +230,7 @@ def render_warehouse_html(
     elif analysis.comparison.comparable_fraction < 1:
         warning = "Incomplete map coverage: unknown areas cannot establish additions or removals."
     else:
-        warning = "Synthetic snapshot: severity estimates use the declared geometry and clearance."
+        warning = ""
     template = Template(
         files("swarm_anomaly").joinpath("templates/warehouse.html").read_text(encoding="utf-8")
     )
@@ -240,7 +240,7 @@ def render_warehouse_html(
         alert_count=len(alerts),
         inaccessible_area=f"{analysis.unreachable_region_area_m2:.1f}",
         coverage=f"{analysis.comparison.comparable_fraction:.1%}",
-        warning=escape(warning),
+        notice=f'<div class="notice">{escape(warning)}</div>' if warning else "",
         inaccessible=escape(inaccessible),
         entry_label=escape(layout.region(layout.entry_region).label),
         clearance=f"{layout.required_width_m:.2f}",
