@@ -1,6 +1,7 @@
 """Exercise the user workflow through its actual module entry point."""
 
 import json
+import math
 import subprocess
 import sys
 import tempfile
@@ -104,3 +105,55 @@ class CommandTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("does_not_exist.yaml", result.stderr)
         self.assertNotIn("Traceback", result.stderr)
+
+    def test_padded_map_requires_opt_in_and_preserves_reference_coordinates(self) -> None:
+        self.assertEqual(self.compare("padded_added").returncode, 2)
+        result = self.compare("padded_added", "--assume-common-frame")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = self.read_report("padded_added")
+        self.assertEqual(report["alignment"]["mode"], "common_frame")
+        self.assertEqual(report["alignment"]["source_geometry"]["width"], 160)
+        self.assertEqual(report["geometry"]["width"], 120)
+        self.assertEqual(report["coverage"]["comparable_fraction"], 1.0)
+        self.assertEqual(len(report["changes"]), 1)
+        self.assertEqual(report["changes"][0]["centroid_m"], [3.75, 2.25])
+
+    def test_rotated_cases_use_supplied_transform(self) -> None:
+        for scenario, expected_count in (("rotated", 0), ("rotated_added", 1)):
+            with self.subTest(scenario=scenario):
+                result = self.compare(scenario, "--transform", "6", "0", str(math.pi / 2))
+                self.assertEqual(result.returncode, 0, result.stderr)
+                report = self.read_report(scenario)
+                self.assertEqual(report["alignment"]["mode"], "provided_transform")
+                self.assertEqual(report["alignment"]["observed_to_reference"]["x_m"], 6.0)
+                self.assertEqual(len(report["changes"]), expected_count)
+                self.assertEqual(report["coverage"]["comparable_fraction"], 1.0)
+                if expected_count:
+                    self.assertEqual(report["changes"][0]["cell_count"], 100)
+                    self.assertEqual(report["changes"][0]["centroid_m"], [3.75, 2.25])
+
+    def test_negative_translation_argument_is_accepted(self) -> None:
+        path = self.maps / "added.yaml"
+        metadata = yaml.safe_load(path.read_text(encoding="utf-8"))
+        metadata["origin"] = [-2, 1, 0]
+        path.write_text(yaml.safe_dump(metadata), encoding="utf-8")
+        result = self.compare("added", "--transform", "2", "-1", "0")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.read_report("added")["changes"][0]["centroid_m"], [3.75, 2.25])
+
+    def test_alignment_options_are_mutually_exclusive(self) -> None:
+        result = self.compare("added", "--assume-common-frame", "--transform", "0", "0", "0")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("not allowed with argument", result.stderr)
+
+    def test_nonfinite_transform_is_a_user_error(self) -> None:
+        result = self.compare("added", "--transform", "nan", "0", "0")
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("finite", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+
+    def test_nonoverlapping_maps_report_insufficient_evidence(self) -> None:
+        result = self.compare("added", "--transform", "1000", "1000", "0")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.read_report("added")["status"], "no_comparable_cells")
+        self.assertIn("Insufficient evidence", result.stdout)

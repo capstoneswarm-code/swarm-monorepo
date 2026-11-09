@@ -32,4 +32,13 @@ def make_scenarios() -> dict[str, OccupancyMap]:
     noise = reference.copy()
     noise[60, 90] = OCCUPIED
     scenarios["speckle"] = noise
-    return {name: OccupancyMap(cells, 0.05) for name, cells in scenarios.items()}
+    maps = {name: OccupancyMap(cells, 0.05) for name, cells in scenarios.items()}
+    for suffix, cells in (("", reference), ("_added", added)):
+        # Place the same room on a larger grid in the same physical frame.
+        padded = np.full((100, 160), UNKNOWN, dtype=np.int8)
+        padded[10:90, 20:140] = cells
+        maps[f"padded{suffix}"] = OccupancyMap(padded, 0.05, (-1.0, -0.5, 0))
+        # A separate frame: p_ref = R(+pi/2) p_obs + (6, 0).
+        # Construct this by rotating array indices, independently of the resampler.
+        maps[f"rotated{suffix}"] = OccupancyMap(np.rot90(cells), 0.05)
+    return maps

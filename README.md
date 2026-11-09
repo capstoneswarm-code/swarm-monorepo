@@ -5,7 +5,8 @@ SWARM: Scalable Warehouse Autonomous Robotic Mapping.
 ## Offline anomaly detection
 
 The Python package under `src/swarm_anomaly` compares already aligned occupancy
-maps and reports candidate added/removed obstacles. It includes synthetic room
+maps and reports candidate added/removed obstacles. Known coordinate transforms
+can align different map grids before comparison. It includes synthetic room
 examples, unknown-area handling, a small-region filter, JSON results, and visual
 overlays. It runs without ROS or robot hardware.
 

@@ -6,8 +6,9 @@ from collections.abc import Iterable, Sequence
 from dataclasses import asdict
 from pathlib import Path
 
+from swarm_anomaly.alignment import RigidTransform, resample_to_reference
 from swarm_anomaly.detection import compare_maps
-from swarm_anomaly.maps import load_map, save_map
+from swarm_anomaly.maps import OccupancyMap, load_map, save_map
 from swarm_anomaly.synthetic import make_scenarios
 from swarm_anomaly.visualization import render_comparison
 
@@ -32,21 +33,47 @@ def _write_fixtures(output: Path) -> None:
     print(f"Saved {len(scenarios)} synthetic map pairs to {output}")
 
 
+def _geometry(grid: OccupancyMap) -> dict[str, object]:
+    return {
+        "width": grid.cells.shape[1],
+        "height": grid.cells.shape[0],
+        "resolution_m": grid.resolution,
+        "origin": grid.origin,
+    }
+
+
 def _write_comparison(
-    reference_path: Path, observed_path: Path, output: Path, min_cells: int
+    reference_path: Path,
+    observed_path: Path,
+    output: Path,
+    min_cells: int,
+    *,
+    transform: RigidTransform | None = None,
+    assume_common_frame: bool = False,
 ) -> None:
-    reference, observed = load_map(reference_path), load_map(observed_path)
+    reference, source = load_map(reference_path), load_map(observed_path)
+    alignment_mode = "strict"
+    if assume_common_frame:
+        transform = RigidTransform()
+        alignment_mode = "common_frame"
+    elif transform is not None:
+        alignment_mode = "provided_transform"
+    observed = (
+        resample_to_reference(reference, source, transform=transform)
+        if transform is not None
+        else source
+    )
     result = compare_maps(reference, observed, min_cells=min_cells)
     report = {
         "schema_version": 1,
         "reference_map": str(reference_path.resolve()),
         "observed_map": str(observed_path.resolve()),
         "status": "compared" if result.comparable_cells else "no_comparable_cells",
-        "geometry": {
-            "width": reference.cells.shape[1],
-            "height": reference.cells.shape[0],
-            "resolution_m": reference.resolution,
-            "origin": reference.origin,
+        "geometry": _geometry(reference),
+        "alignment": {
+            "mode": alignment_mode,
+            "observed_to_reference": asdict(transform) if transform is not None else None,
+            "source_geometry": _geometry(source),
         },
         "parameters": {"min_cells": min_cells, "connectivity": 4},
         "coverage": {
@@ -58,7 +85,10 @@ def _write_comparison(
         "changes": [asdict(change) for change in result.changes],
     }
     _prepare_output(output, ("changes.json", "overlay.png"))
-    render_comparison(reference, observed, result).save(output / "overlay.png")
+    observed_label = "Observed on reference grid" if transform is not None else "Observed"
+    render_comparison(reference, observed, result, observed_label=observed_label).save(
+        output / "overlay.png"
+    )
     (output / "changes.json").write_text(
         json.dumps(report, indent=2, allow_nan=False) + "\n", encoding="utf-8"
     )
@@ -79,7 +109,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     fixtures.add_argument(
         "--output", type=Path, required=True, help="Directory for synthetic map pairs"
     )
-    compare = commands.add_parser("compare", help="Compare already aligned trinary maps")
+    compare = commands.add_parser(
+        "compare", help="Compare trinary maps with optional known alignment"
+    )
     compare.add_argument("--reference", type=Path, required=True, help="Expected map YAML")
     compare.add_argument("--observed", type=Path, required=True, help="Observed map YAML")
     compare.add_argument(
@@ -88,12 +120,33 @@ def main(argv: Sequence[str] | None = None) -> int:
     compare.add_argument(
         "--min-cells", type=int, default=4, help="Minimum connected region size (default: 4)"
     )
+    alignment = compare.add_mutually_exclusive_group()
+    alignment.add_argument(
+        "--assume-common-frame",
+        action="store_true",
+        help="Resample using map metadata; requires a shared physical coordinate frame",
+    )
+    alignment.add_argument(
+        "--transform",
+        nargs=3,
+        type=float,
+        metavar=("X_M", "Y_M", "YAW_RAD"),
+        help="Known observed-frame to reference-frame transform (metres, metres, radians)",
+    )
     args = parser.parse_args(argv)
     try:
         if args.command == "fixtures":
             _write_fixtures(args.output)
         else:
-            _write_comparison(args.reference, args.observed, args.output, args.min_cells)
+            transform = RigidTransform(*args.transform) if args.transform is not None else None
+            _write_comparison(
+                args.reference,
+                args.observed,
+                args.output,
+                args.min_cells,
+                transform=transform,
+                assume_common_frame=args.assume_common_frame,
+            )
     except (OSError, ValueError) as error:
         parser.error(str(error))
     return 0

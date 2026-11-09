@@ -81,7 +81,8 @@ and the supported trinary subset of
 `swarm_anomaly.synthetic.make_scenarios` creates a 6 x 4 m room at 5 cm/cell with
 unchanged, added, removed, moved, partially observed, fully unobserved, and isolated
 speckle cases. Boxes are 0.5 x 0.5 m. These are deliberately simple grids with
-known changes, not generated LiDAR observations.
+known changes, not generated LiDAR observations. Padded and rotated versions of
+the reference and added-box maps exercise alignment independently of the resampler.
 
 ## Comparison contract
 
@@ -141,10 +142,49 @@ Sampling a fine map onto a coarse grid can lose small obstacles; arbitrary-angle
 rotation can introduce raster differences. This does not correct SLAM distortion
 or validate the supplied transform. Use coverage and the overlay to review results.
 
+### CLI examples
+
+Without an alignment flag, comparison retains the original strict matching-grid
+requirement. Choose exactly one flag when resampling is needed:
+
+- `--assume-common-frame`: the maps already use the same physical coordinates;
+  resolve different origins, orientations, sizes, or resolutions from their metadata.
+- `--transform X_M Y_M YAW_RAD`: provide the known observed-to-reference transform.
+  Neither option estimates alignment from the occupancy patterns.
+
+Generate fresh fixtures to include the alignment examples:
+
+```bash
+swarm-anomaly fixtures --output artifacts/alignment/maps
+swarm-anomaly compare \
+  --reference artifacts/alignment/maps/reference.yaml \
+  --observed artifacts/alignment/maps/padded_added.yaml \
+  --assume-common-frame \
+  --output artifacts/alignment/padded-added
+swarm-anomaly compare \
+  --reference artifacts/alignment/maps/reference.yaml \
+  --observed artifacts/alignment/maps/rotated_added.yaml \
+  --transform 6 0 1.5707963267948966 \
+  --output artifacts/alignment/rotated-added
+```
+
+Both comparisons should find one 100-cell (0.25 m²) added region with centroid
+`[3.75, 2.25]` metres and 100% comparable coverage of the reference footprint.
+Using `padded.yaml` or `rotated.yaml` with the corresponding flag should produce no
+regions. The rotated fixtures were constructed using a 90-degree array rotation;
+the supplied transform is known by construction, not estimated by the detector.
+
+`changes.json` records the alignment mode, supplied transform, and original
+observation geometry under `alignment`. The overlay's middle panel shows the
+observation **after** resampling onto the reference grid. Reported area and
+`--min-cells` always refer to reference-grid cells, including when resolutions differ.
+An incorrect transform can yield false differences or no overlap; zero comparable
+coverage still produces `status: no_comparable_cells`, not an unchanged-room claim.
+
 ## Next milestones
 
-1. Integrate known-transform resampling into the CLI and add rotated/shifted fixtures.
-   Then investigate automatic registration and robustness to mapping noise.
+1. Add repeatable noise and alignment-error experiments to measure false detections.
+   Investigate automatic registration with an explicit failure/uncertainty outcome.
 2. Obtain exported physical maps with their YAML metadata and an agreed reference
    layout. Measure mounting transforms and check calibration with the hardware team.
 3. Validate against labelled additions/removals and unchanged repeated runs. Measure

@@ -20,7 +20,11 @@ def _pixels(grid: OccupancyMap) -> NDArray[np.uint8]:
 
 
 def render_comparison(
-    reference: OccupancyMap, observed: OccupancyMap, result: Comparison
+    reference: OccupancyMap,
+    observed: OccupancyMap,
+    result: Comparison,
+    *,
+    observed_label: str = "Observed",
 ) -> Image.Image:
     """Show reference, observation, and retained changes with a shared pixel scale."""
     overlay = _pixels(observed)
@@ -43,7 +47,7 @@ def render_comparison(
     draw.text((margin, 18), "SWARM map comparison", fill=(26, 43, 60), font=title_font)
     panels = (
         ("Reference", _pixels(reference)),
-        ("Observed", _pixels(observed)),
+        (observed_label, _pixels(observed)),
         ("Changes", overlay),
     )
     for index, (label, pixels) in enumerate(panels):
