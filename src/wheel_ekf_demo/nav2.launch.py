@@ -26,9 +26,12 @@ def configured_params(defaults, radius):
     config = yaml.safe_load(defaults.read_text())
     for name in ("local_costmap", "global_costmap"):
         params = config[name][name]["ros__parameters"]
-        params["robot_radius"] = radius
+        clearance = radius + 0.12 if name == "global_costmap" else radius
+        params["robot_radius"] = clearance
+        if name == "global_costmap":
+            params["obstacle_layer"]["footprint_clearing_enabled"] = False
         params["footprint_padding"] = 0.01
-        params["inflation_layer"]["inflation_radius"] = radius + 0.15
+        params["inflation_layer"]["inflation_radius"] = clearance + 0.15
     config["collision_monitor"]["ros__parameters"]["StopZone"]["radius"] = radius + 0.07
     return config
 
@@ -59,7 +62,7 @@ def bringup(context):
     )
     explorer = ExecuteProcess(
         cmd=[sys.executable, "-u", str(FOLDER / "frontier_explorer.py"),
-             "--radius", str(radius)],
+             "--radius", str(radius + 0.12)],
         output="screen", name="frontier_explorer",
         condition=IfCondition(LaunchConfiguration("explore")),
     )

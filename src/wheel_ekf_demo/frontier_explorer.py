@@ -100,7 +100,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--radius", required=True, type=float)
     args = parser.parse_args()
-    if not math.isfinite(args.radius) or not 0.03 <= args.radius <= 1.0:
+    if not math.isfinite(args.radius) or not 0.03 <= args.radius <= 1.2:
         parser.error("Supply the measured footprint radius in meters")
 
     import rclpy

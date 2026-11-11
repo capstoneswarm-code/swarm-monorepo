@@ -13,7 +13,7 @@ from launch_ros.actions import Node
 LIDAR_X = 0.0
 LIDAR_Y = 0.0
 LIDAR_Z = 0.0
-LIDAR_YAW = 0.0
+LIDAR_YAW = 3.141592653589793
 
 LIDAR_PORT = (
     "/dev/serial/by-id/"

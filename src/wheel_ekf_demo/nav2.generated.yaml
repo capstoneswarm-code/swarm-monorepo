@@ -120,12 +120,13 @@ global_costmap:
           obstacle_max_range: 3.0
           raytrace_min_range: 0.1
           raytrace_max_range: 3.5
+        footprint_clearing_enabled: false
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
         cost_scaling_factor: 3.0
-        inflation_radius: 0.29000000000000004
+        inflation_radius: 0.41000000000000003
       always_send_full_costmap: true
-      robot_radius: 0.14
+      robot_radius: 0.26
       footprint_padding: 0.01
 behavior_server:
   ros__parameters:
