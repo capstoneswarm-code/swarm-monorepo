@@ -3,6 +3,13 @@
 1. Open up 2 terminals on the RPi
 
 2. Run the following in each terminal:
+For swarm1:
+```bash
+source /opt/ros/kilted/setup.bash
+export ROS_DOMAIN_ID=78
+cd ~/Documents/swarm-mono/
+```
+For swarm2:
 ```bash
 source /opt/ros/kilted/setup.bash
 export ROS_DOMAIN_ID=78
@@ -18,6 +25,13 @@ ros2 launch "$PWD/src/manual_demo/mapping.launch.py"
 ```
 
 5. On your local machine run the following to start the visualization script:
+For swarm1:
+```bash
+ssh -x -t -o ExitOnForwardFailure=yes \
+  -L 127.0.0.1:8765:127.0.0.1:8765 swarm1 \
+  'source /opt/ros/kilted/setup.bash && ROS_DOMAIN_ID=78 python3 ~/Documents/swarm-mono/src/manual_demo/web_map.py'
+```
+For swarm2:
 ```bash
 ssh -x -t -o ExitOnForwardFailure=yes \
   -L 127.0.0.1:8765:127.0.0.1:8765 swarm2 \
