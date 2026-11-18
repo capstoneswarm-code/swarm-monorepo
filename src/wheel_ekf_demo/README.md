@@ -6,6 +6,13 @@ bash src/wheel_ekf_demo/start_nav2.sh robot_radius:=0.14   hardware_config:="$PW
 ### Visualization:
 
 On your local machine run the following to start the visualization script:
+For swarm1:
+```bash
+ssh -x -t -o ExitOnForwardFailure=yes \
+  -L 127.0.0.1:8765:127.0.0.1:8765 swarm1 \
+  'source /opt/ros/kilted/setup.bash && ROS_DOMAIN_ID=79 python3 ~/Documents/swarm-mono/src/manual_demo/web_map.py'
+```
+For swarm2:
 ```bash
 ssh -x -t -o ExitOnForwardFailure=yes \
   -L 127.0.0.1:8765:127.0.0.1:8765 swarm2 \
