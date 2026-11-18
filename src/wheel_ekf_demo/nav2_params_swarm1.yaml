@@ -168,7 +168,7 @@ bt_navigator:
     - navigate_to_pose
     navigate_to_pose:
       plugin: nav2_bt_navigator::NavigateToPoseNavigator
-    default_nav_to_pose_bt_xml: ~/Documents/swarm-mono/src/wheel_ekf_demo/manual_nav.xml
+    default_nav_to_pose_bt_xml: /home/swarm1/Documents/swarm-mono/src/wheel_ekf_demo/manual_nav.xml
 velocity_smoother:
   ros__parameters:
     use_sim_time: false

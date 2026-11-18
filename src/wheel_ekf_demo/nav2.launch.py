@@ -4,6 +4,7 @@ import math
 import os
 from pathlib import Path
 import sys
+import socket
 
 import yaml
 from launch import LaunchDescription
@@ -40,9 +41,16 @@ def bringup(context):
     def arg(name):
         return LaunchConfiguration(name).perform(context)
 
+    robot = socket.gethostname().split(".", 1)[0]
+    if robot not in ("swarm1", "swarm2"):
+        raise RuntimeError(f"Unknown robot hostname: {robot!r}")
+
     radius = float(arg("robot_radius"))
     if not math.isfinite(radius) or not 0.03 <= radius <= 1.0:
-        raise ValueError("Use a measured footprint radius in meters between 0.03 and 1.0")
+        raise ValueError(
+            "Use a measured footprint radius in meters between 0.03 and 1.0"
+        )
+
     hardware = Path(arg("hardware_config")).expanduser().resolve()
     if not hardware.is_file():
         raise RuntimeError(f"Hardware configuration not found: {hardware}")
@@ -50,8 +58,25 @@ def bringup(context):
     mapping = FOLDER / "mapping.launch.py"
     if not mapping.is_file():
         raise RuntimeError(f"Missing your existing live-SLAM launch: {mapping}")
-    config = configured_params(FOLDER / "nav2_params.yaml", radius)
-    params = FOLDER / "nav2.generated.yaml"
+
+    config_path = FOLDER / f"nav2_params_{robot}.yaml"
+    if not config_path.is_file():
+        raise RuntimeError(f"Missing navigation configuration: {config_path}")
+
+    config = configured_params(config_path, radius)
+
+    navigator = config["bt_navigator"]["ros__parameters"]
+    for key in ("default_nav_to_pose_bt_xml", "default_nav_through_poses_bt_xml"):
+        if navigator.get(key):
+            tree = Path(navigator[key]).expanduser()
+            if not tree.is_absolute():
+                tree = FOLDER / tree
+            tree = tree.resolve()
+            if not tree.is_file():
+                raise RuntimeError(f"Missing behavior-tree file: {tree}")
+            navigator[key] = str(tree)
+
+    params = FOLDER / f"nav2.generated.{robot}.yaml"
     params.write_text(yaml.safe_dump(config, sort_keys=False))
 
     bridge = ExecuteProcess(

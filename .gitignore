@@ -60,3 +60,5 @@ Desktop.ini
 *~
 *.swp
 *.swo
+
+**.generated.**
