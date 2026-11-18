@@ -10,13 +10,13 @@ For swarm1:
 ```bash
 ssh -x -t -o ExitOnForwardFailure=yes \
   -L 127.0.0.1:8765:127.0.0.1:8765 swarm1 \
-  'source /opt/ros/kilted/setup.bash && ROS_DOMAIN_ID=79 python3 ~/Documents/swarm-mono/src/manual_demo/web_map.py'
+  'source /opt/ros/kilted/setup.bash && ROS_DOMAIN_ID=79 python3 ~/Documents/swarm-mono/src/wheel_ekf_demo/web_map.py'
 ```
 For swarm2:
 ```bash
 ssh -x -t -o ExitOnForwardFailure=yes \
   -L 127.0.0.1:8765:127.0.0.1:8765 swarm2 \
-  'source /opt/ros/kilted/setup.bash && ROS_DOMAIN_ID=78 python3 ~/Documents/swarm-mono/src/manual_demo/web_map.py'
+  'source /opt/ros/kilted/setup.bash && ROS_DOMAIN_ID=78 python3 ~/Documents/swarm-mono/src/wheel_ekf_demo/web_map.py'
 ```
 
 Connect to `http://127.0.0.1:8765/` in a browser to see results
