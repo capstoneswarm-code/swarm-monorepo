@@ -190,6 +190,12 @@ def main():
     class Explorer(Node):
         def __init__(self):
             super().__init__("frontier_explorer")
+            self.home = None
+            self.no_frontier_since = None
+            self.home_requested = False
+            self.returning_home = False
+            self.home_attempts = 0
+            self.mission_done = False
             self.grid = self.geometry = self.mask = None
             self.map_received = -math.inf
             self.costs = self.cost_geometry = self.reach_cache = None
@@ -305,8 +311,82 @@ def main():
             stamp = tf.header.stamp.sec * 1_000_000_000 + tf.header.stamp.nanosec
             age = (self.get_clock().now().nanoseconds - stamp) * 1e-9
             return tf if abs(age) <= POSE_STALE_S else None
+        
+        def no_frontier(self, now, x, y):
+            if self.no_frontier_since is None:
+                self.no_frontier_since = now
+
+            if now - self.no_frontier_since < 10.0:
+                self.note("No eligible frontier; waiting before returning home")
+                return
+
+            self.home_requested = True
+            self.start_home(now, x, y)
+
+        def start_home(self, now, x, y):
+            if self.home is None:
+                self.note("Cannot return home: starting pose was not recorded")
+                return
+
+            if self.home_attempts >= 3:
+                self.note(
+                    "Return home failed after 3 attempts; parked"
+                )
+                return
+
+            tree = Path(__file__).with_name("home_nav.xml").resolve()
+            if not tree.is_file():
+                raise RuntimeError(f"Missing home behavior tree: {tree}")
+
+            self.goal = self.home
+            request = NavigateToPose.Goal()
+            request.pose = self.pose()
+            request.behavior_tree = str(tree)
+
+            self.goal_budget_s = max(
+                90.0,
+                30.0 + math.hypot(self.home[0] - x, self.home[1] - y) / 0.10,
+            )
+
+            self.home_attempts += 1
+            self.returning_home = True
+
+            self.get_logger().info(
+                f"Returning home: x={self.home[0]:.2f}, "
+                f"y={self.home[1]:.2f}, "
+                f"yaw={math.degrees(self.home[2]):.1f} deg "
+                f"(attempt {self.home_attempts}/3)"
+            )
+
+            # Keep the existing viewer's active-goal marker working.
+            self.status_pub.publish(String(data="Navigating"))
+            self.goal_pub.publish(request.pose)
+
+            self.stop_window.start_goal(now)
+            self.future = self.navigate.send_goal_async(request)
+            self.phase, self.phase_since = "nav_handle", now
 
         def finish(self, now, message, *, reached=False, retry=True):
+            if self.returning_home:
+                self.returning_home = False
+                self.future = self._goal_handle = self.goal = None
+                self.phase = "idle"
+                self.cancel_since = None
+
+                if reached:
+                    self.mission_done = True
+                    message = "Returned to starting position and orientation; parked"
+                else:
+                    message = (
+                        "Return home unsuccessful; retrying in 10 seconds"
+                        if self.home_attempts < 3
+                        else "Return home failed after 3 attempts; parked"
+                    )
+
+                self.next_goal = now + 10.0
+                self.idle_message = None
+                self.note(message)
+                return
             if reached:
                 self.excluded.append((*self.goal[:2], now + 120.0))
             elif retry:
@@ -319,6 +399,8 @@ def main():
             self.cancel_since = self.idle_message = None
 
         def step(self):
+            if self.mission_done:
+                return
             now = time.monotonic()
             fresh_map = self.grid is not None and now - self.map_received <= MAP_STALE_S
             if self.future is not None:
@@ -339,6 +421,16 @@ def main():
             pos = tf.transform.translation
             q = tf.transform.rotation
             yaw = math.atan2(2*(q.w*q.z + q.x*q.y), 1 - 2*(q.y*q.y + q.z*q.z))
+            if self.home is None:
+                self.home = (pos.x, pos.y, yaw)
+                self.get_logger().info(
+                    f"Saved starting pose: x={pos.x:.2f}, "
+                    f"y={pos.y:.2f}, yaw={math.degrees(yaw):.1f} deg"
+                )
+
+            if self.home_requested:
+                self.start_home(now, pos.x, pos.y)
+                return
             if self.costs is None or now - self.cost_received > 5.0:
                 self.note("Waiting for a fresh global costmap")
                 return
@@ -353,9 +445,7 @@ def main():
                 return
             mask = connected_candidates(self.candidates(), self.geometry, reachable, self.cost_geometry)
             if not mask.any():
-                self.note(f"No costmap-connected frontier: start cost={start_cost}, "
-                          f"reachable cells={np.count_nonzero(reachable)}, "
-                          f"raw approach cells={np.count_nonzero(self.candidates())}")
+                self.no_frontier(now, pos.x, pos.y)
                 return
             while self.rejected and self.rejected[0][2] <= now:
                 self.rejected.popleft()
@@ -366,8 +456,9 @@ def main():
             self.goal = choose_goal(mask, self.geometry, pos.x, pos.y, excluded,
                                     max(0.8, args.radius * 1.5), yaw)
             if self.goal is None:
-                self.note("No eligible frontier approach; parked for now")
+                self.no_frontier(now, pos.x, pos.y)
                 return
+            self.no_frontier_since = None
             request = NavigateToPose.Goal()
             request.pose = self.pose()
             tree = Path(__file__).with_name("exploration_nav.xml")
