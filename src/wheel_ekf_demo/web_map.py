@@ -15,6 +15,7 @@ import struct
 from threading import Lock, Thread
 import time
 import zlib
+from uuid import uuid4
 
 import numpy as np
 
@@ -38,6 +39,7 @@ small{color:#bbb} .blue{color:#4dabff}.orange{color:#ffb347}
 const canvas=document.getElementById('map'), ctx=canvas.getContext('2d');
 const readout=document.getElementById('readout'),status=document.getElementById('status');
 let image=null, meta=null, busy=false, trail=[];
+let runId=null, viewerId=null;
 function pixel(x,y){
  const dx=x-meta.ox,dy=y-meta.oy,c=Math.cos(meta.yaw),s=Math.sin(meta.yaw);
  return [(c*dx+s*dy)/meta.resolution,meta.height-(-s*dx+c*dy)/meta.resolution];
@@ -70,6 +72,11 @@ async function update(){
  if(busy)return;busy=true;
  try{
   const state=await (await fetch('/state',{cache:'no-store'})).json();
+  if(state.run_id!==runId || state.viewer_id!==viewerId){
+   trail=[];
+   if(state.viewer_id!==viewerId){meta=null;image=null;}
+   runId=state.run_id;viewerId=state.viewer_id;
+  }
   if(state.version && (!meta||state.version>meta.version)){
    const map=await (await fetch('/map',{cache:'no-store'})).json();
    const next=new Image();next.src='data:image/png;base64,'+map.png;
@@ -110,11 +117,14 @@ class Shared:
         self.radius, self.version = radius, 0
         self.pose = self.goal = self.map_json = None
         self.status = ''
+        self.run_id = ''
+        self.viewer_id = str(uuid4())
 
     def state(self):
         with self.lock:
             return json.dumps(dict(version=self.version, radius=self.radius,
-                pose=self.pose, goal=self.goal, status=self.status), allow_nan=False).encode()
+                pose=self.pose, goal=self.goal, status=self.status,
+                run_id=self.run_id, viewer_id=self.viewer_id), allow_nan=False).encode()
 
 
 def handler_for(shared):
@@ -180,6 +190,8 @@ def main():
             display_qos = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL)
             self.goal_sub = self.create_subscription(PoseStamped, '/exploration/goal', self.on_goal, display_qos)
             self.status_sub = self.create_subscription(String, '/exploration/status', self.on_status, display_qos)
+            self.pose_after_ns = 0
+            self.run_sub = self.create_subscription(String, '/navigation/run_id', self.on_run, display_qos)
             self.pose_timer = self.create_timer(0.2, self.publish_pose)
             self.map_timer = self.create_timer(1.0, self.render_map)
 
@@ -193,6 +205,15 @@ def main():
                 with shared.lock:
                     shared.goal = dict(x=msg.pose.position.x, y=msg.pose.position.y)
 
+        def on_run(self, msg):
+            with shared.lock:
+                if shared.run_id == msg.data:
+                    return
+                shared.run_id = msg.data
+                shared.pose = shared.goal = None
+                shared.status = 'New run: waiting for fresh pose'
+            self.pose_after_ns = self.get_clock().now().nanoseconds
+
         def on_status(self, msg):
             with shared.lock:
                 shared.status = msg.data
@@ -201,6 +222,8 @@ def main():
             try:
                 tf = self.tf.lookup_transform('map', 'base_link', Time())
                 stamp = tf.header.stamp.sec*10**9 + tf.header.stamp.nanosec
+                if stamp < self.pose_after_ns:
+                    raise ValueError('Waiting for pose from the new run')
                 if abs((self.get_clock().now().nanoseconds-stamp)*1e-9) > 1.0:
                     raise ValueError('Stale map pose')
                 q, p = tf.transform.rotation, tf.transform.translation

@@ -303,6 +303,9 @@ def make_node(config, nav2=False):
     # Delay ROS imports so the non-ROS parts can be tested independently.
     from nav_msgs.msg import Odometry
     from rclpy.node import Node
+    from std_msgs.msg import String
+    from uuid import uuid4
+    from rclpy.qos import DurabilityPolicy, QoSProfile
     from sensor_msgs.msg import Imu
     if nav2:
         from geometry_msgs.msg import TwistStamped
@@ -312,6 +315,13 @@ def make_node(config, nav2=False):
         def __init__(self):
             super().__init__("nav_bridge" if nav2 else "keyboard_bridge",
                              namespace="/hardware_demo")
+            self._navigation_run_id = str(uuid4())
+            self._navigation_run_id_pub = self.create_publisher(
+                String, "/navigation/run_id",
+                QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL))
+            self._navigation_run_timer = self.create_timer(1.0, lambda:
+                self._navigation_run_id_pub.publish(String(data=self._navigation_run_id)))
+            self._navigation_run_id_pub.publish(String(data=self._navigation_run_id))
             self.wheel_pub = self.create_publisher(Odometry, "wheel_odom", 10)
             self.imu_pub = self.create_publisher(Imu, "imu/data_raw", 10)
             self.filtered_sub = self.create_subscription(

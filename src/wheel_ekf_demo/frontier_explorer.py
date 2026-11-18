@@ -106,7 +106,7 @@ def choose_goal(mask, geometry, robot_x, robot_y, excluded, exclusion_radius,
         return None
     xs, ys = world_points(rows, cols, geometry)
     distance = np.hypot(xs - robot_x, ys - robot_y)
-    eligible = np.isfinite(distance) & (distance >= 0.30)
+    eligible = np.isfinite(distance) & (distance >= 0.50)
     for x, y in excluded:
         eligible &= (xs-x)**2 + (ys-y)**2 >= exclusion_radius**2
     if not eligible.any():
