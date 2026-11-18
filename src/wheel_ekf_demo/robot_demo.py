@@ -44,8 +44,8 @@ class NavVelocity:
         half = self.track_width / 2.0
         left, right = linear - angular * half, linear + angular * half
         # A common scale keeps the path curvature when applying hardware caps.
-        ratios = [1.0, abs(linear) / 0.15, abs(angular) / 0.8,
-                  max(abs(left), abs(right)) / 0.20]
+        ratios = [1.0, abs(linear) / 1.000, abs(angular) / 0.8,
+                  max(abs(left), abs(right)) / 1.150]
         scale = max(ratios)
         if not math.isfinite(scale):
             self.wheels = (0.0, 0.0)
@@ -562,7 +562,7 @@ def main():
     with args.config.open() as stream:
         config = yaml.safe_load(stream)
     # Autonomous motion has its own limits; ignore manual speed/lease settings.
-    validated = dict(config, speed_m_s=0.15, key_timeout_s=0.8) if args.nav2 else config
+    validated = dict(config, speed_m_s=1.000, key_timeout_s=0.8) if args.nav2 else config
     validate_config(validated)
     os.environ["ROS_DOMAIN_ID"] = str(args.domain_id)
     os.environ["PYTHONUNBUFFERED"] = "1"

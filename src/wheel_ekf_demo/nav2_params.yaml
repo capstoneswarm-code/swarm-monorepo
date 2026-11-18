@@ -1,17 +1,14 @@
-# Kilted; physical differential-drive robot using the live SLAM Toolbox map.
-# nav2.launch.py fills in the measured footprint radius.
-
 planner_server:
   ros__parameters:
     use_sim_time: false
-    planner_plugins: [GridBased]
+    planner_plugins:
+    - GridBased
     expected_planner_frequency: 2.0
     GridBased:
       plugin: nav2_navfn_planner::NavfnPlanner
-      use_astar: false
+      use_astar: true
       allow_unknown: false
-      tolerance: 0.10
-
+      tolerance: 0.1
 controller_server:
   ros__parameters:
     use_sim_time: false
@@ -21,9 +18,13 @@ controller_server:
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.001
     min_theta_velocity_threshold: 0.001
-    progress_checker_plugins: [progress_checker]
-    goal_checker_plugins: [goal_checker]
-    controller_plugins: [FollowPath]
+    progress_checker_plugins:
+    - progress_checker
+    goal_checker_plugins:
+    - goal_checker
+    - explore_goal_checker
+    controller_plugins:
+    - FollowPath
     progress_checker:
       plugin: nav2_controller::SimpleProgressChecker
       required_movement_radius: 0.08
@@ -31,30 +32,38 @@ controller_server:
     goal_checker:
       plugin: nav2_controller::SimpleGoalChecker
       xy_goal_tolerance: 0.12
-      yaw_goal_tolerance: 0.20
+      yaw_goal_tolerance: 0.2
       stateful: true
     FollowPath:
       plugin: nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController
-      desired_linear_vel: 0.15
-      lookahead_dist: 0.30
+      desired_linear_vel: 0.4
+      lookahead_dist: 0.7
       use_velocity_scaled_lookahead_dist: false
       min_approach_linear_velocity: 0.035
-      approach_velocity_scaling_dist: 0.35
+      approach_velocity_scaling_dist: 1.2
       rotate_to_heading_angular_vel: 0.65
-      rotate_to_heading_min_angle: 0.65
+      rotate_to_heading_min_angle: 1.0
       use_rotate_to_heading: true
       allow_reversing: false
       max_angular_accel: 10.0
       use_collision_detection: true
-      max_allowed_time_to_collision_up_to_carrot: 1.0
+      max_allowed_time_to_collision_up_to_carrot: 2.0
       use_regulated_linear_velocity_scaling: true
-      regulated_linear_scaling_min_radius: 0.45
+      regulated_linear_scaling_min_radius: 1.25
       regulated_linear_scaling_min_speed: 0.04
       use_cost_regulated_linear_velocity_scaling: true
       cost_scaling_dist: 0.18
       inflation_cost_scaling_factor: 3.0
       transform_tolerance: 0.2
-
+      min_lookahead_dist: 0.3
+      max_lookahead_dist: 1.2
+      lookahead_time: 1.1
+      use_fixed_curvature_lookahead: false
+    explore_goal_checker:
+      plugin: nav2_controller::SimpleGoalChecker
+      xy_goal_tolerance: 0.18
+      yaw_goal_tolerance: 3.141592653589793
+      stateful: true
 local_costmap:
   local_costmap:
     ros__parameters:
@@ -68,7 +77,9 @@ local_costmap:
       resolution: 0.05
       update_frequency: 5.0
       publish_frequency: 2.0
-      plugins: [obstacle_layer, inflation_layer]
+      plugins:
+      - obstacle_layer
+      - inflation_layer
       obstacle_layer:
         plugin: nav2_costmap_2d::ObstacleLayer
         observation_sources: scan
@@ -77,15 +88,14 @@ local_costmap:
           data_type: LaserScan
           clearing: true
           marking: true
-          obstacle_min_range: 0.10
+          obstacle_min_range: 0.1
           obstacle_max_range: 3.0
-          raytrace_min_range: 0.10
+          raytrace_min_range: 0.1
           raytrace_max_range: 3.5
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
         cost_scaling_factor: 3.0
       always_send_full_costmap: true
-
 global_costmap:
   global_costmap:
     ros__parameters:
@@ -97,7 +107,10 @@ global_costmap:
       track_unknown_space: true
       update_frequency: 2.0
       publish_frequency: 1.0
-      plugins: [static_layer, obstacle_layer, inflation_layer]
+      plugins:
+      - static_layer
+      - obstacle_layer
+      - inflation_layer
       static_layer:
         plugin: nav2_costmap_2d::StaticLayer
         map_topic: /map
@@ -110,15 +123,14 @@ global_costmap:
           data_type: LaserScan
           clearing: true
           marking: true
-          obstacle_min_range: 0.10
+          obstacle_min_range: 0.1
           obstacle_max_range: 3.0
-          raytrace_min_range: 0.10
+          raytrace_min_range: 0.1
           raytrace_max_range: 3.5
       inflation_layer:
         plugin: nav2_costmap_2d::InflationLayer
         cost_scaling_factor: 3.0
       always_send_full_costmap: true
-
 behavior_server:
   ros__parameters:
     use_sim_time: false
@@ -135,11 +147,16 @@ behavior_server:
     max_rotational_vel: 0.8
     min_rotational_vel: 0.2
     rotational_acc_lim: 1.2
-    behavior_plugins: [spin, backup, wait]
-    spin: {plugin: 'nav2_behaviors::Spin'}
-    backup: {plugin: 'nav2_behaviors::BackUp'}
-    wait: {plugin: 'nav2_behaviors::Wait'}
-
+    behavior_plugins:
+    - spin
+    - backup
+    - wait
+    spin:
+      plugin: nav2_behaviors::Spin
+    backup:
+      plugin: nav2_behaviors::BackUp
+    wait:
+      plugin: nav2_behaviors::Wait
 bt_navigator:
   ros__parameters:
     use_sim_time: false
@@ -147,9 +164,11 @@ bt_navigator:
     robot_base_frame: base_link
     odom_topic: /hardware_demo/odometry/filtered
     transform_tolerance: 0.3
-    navigators: [navigate_to_pose]
-    navigate_to_pose: {plugin: 'nav2_bt_navigator::NavigateToPoseNavigator'}
-
+    navigators:
+    - navigate_to_pose
+    navigate_to_pose:
+      plugin: nav2_bt_navigator::NavigateToPoseNavigator
+    default_nav_to_pose_bt_xml: /home/swarm2/Documents/swarm-mono/src/wheel_ekf_demo/manual_nav.xml
 velocity_smoother:
   ros__parameters:
     use_sim_time: false
@@ -157,14 +176,28 @@ velocity_smoother:
     smoothing_frequency: 20.0
     feedback: OPEN_LOOP
     scale_velocities: true
-    max_velocity: [0.15, 0.0, 0.80]
-    min_velocity: [-0.08, 0.0, -0.80]
-    max_accel: [0.40, 0.0, 1.20]
-    max_decel: [-0.60, 0.0, -1.60]
-    deadband_velocity: [0.0, 0.0, 0.0]
-    velocity_timeout: 0.20
+    max_velocity:
+    - 0.4
+    - 0.0
+    - 0.8
+    min_velocity:
+    - -0.08
+    - 0.0
+    - -0.8
+    max_accel:
+    - 0.4
+    - 0.0
+    - 1.2
+    max_decel:
+    - -0.6
+    - 0.0
+    - -1.6
+    deadband_velocity:
+    - 0.0
+    - 0.0
+    - 0.0
+    velocity_timeout: 0.2
     odom_topic: /hardware_demo/odometry/filtered
-
 collision_monitor:
   ros__parameters:
     use_sim_time: false
@@ -179,15 +212,27 @@ collision_monitor:
     transform_tolerance: 0.2
     base_shift_correction: true
     stop_pub_timeout: 1.0
-    polygons: [StopZone]
+    polygons:
+    - StopZone
+    - FootprintApproach
     StopZone:
       type: circle
       action_type: stop
       min_points: 3
       enabled: true
       visualize: false
-    observation_sources: [scan]
+    observation_sources:
+    - scan
     scan:
       type: scan
       topic: /scan
+      enabled: true
+    FootprintApproach:
+      type: polygon
+      action_type: approach
+      footprint_topic: /local_costmap/published_footprint
+      time_before_collision: 2.0
+      simulation_time_step: 0.05
+      min_points: 3
+      visualize: false
       enabled: true
