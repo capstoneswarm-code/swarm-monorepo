@@ -17,6 +17,7 @@ import termios
 from threading import Lock, Thread
 import time
 import tty
+import socket
 
 import yaml
 
@@ -553,8 +554,15 @@ def interrupted(*_):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=Path(__file__).with_name("hardware.yaml"))
-    parser.add_argument("--domain-id", type=int, default=78,
-                        help="ROS domain (default 78, separate from the synthetic demo on 77)")
+    robot_name = socket.gethostname().split(".", 1)[0]
+    default_domain = {"swarm1": 79, "swarm2": 78}[robot_name]
+
+    parser.add_argument(
+        "--domain-id",
+        type=int,
+        default=default_domain,
+        help=f"ROS domain (default {default_domain} on {robot_name})",
+    )
     parser.add_argument("--control-port", type=int, default=8766,
                         help="Loopback port for browser control (default 8766)")
     mode = parser.add_mutually_exclusive_group()

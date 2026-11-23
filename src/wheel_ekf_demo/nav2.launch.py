@@ -22,6 +22,13 @@ from launch_ros.actions import Node
 
 FOLDER = Path(__file__).resolve().parent
 
+ROBOT_DOMAIN_ID = str({
+    "swarm1": 79,
+    "swarm2": 78,
+}[socket.gethostname().split(".", 1)[0]])
+
+os.environ["ROS_DOMAIN_ID"] = ROBOT_DOMAIN_ID
+
 
 def configured_params(defaults, radius):
     config = yaml.safe_load(defaults.read_text())
@@ -81,7 +88,7 @@ def bringup(context):
 
     bridge = ExecuteProcess(
         cmd=[sys.executable, "-u", str(FOLDER / "robot_demo.py"), "--nav2",
-             "--domain-id", os.environ.get("ROS_DOMAIN_ID", "78"),
+             "--domain-id", ROBOT_DOMAIN_ID,
              "--config", str(hardware)],
         output="screen", name="robot_hardware",
     )

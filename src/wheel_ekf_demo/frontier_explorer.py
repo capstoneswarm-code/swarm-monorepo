@@ -104,23 +104,24 @@ def choose_goal(mask, geometry, robot_x, robot_y, excluded, exclusion_radius,
     rows, cols = np.nonzero(mask)
     if not len(rows):
         return None
-
     xs, ys = world_points(rows, cols, geometry)
     distance = np.hypot(xs - robot_x, ys - robot_y)
     eligible = np.isfinite(distance) & (distance >= 0.50)
-
     for x, y in excluded:
-        eligible &= (xs - x)**2 + (ys - y)**2 >= exclusion_radius**2
-
+        eligible &= (xs-x)**2 + (ys-y)**2 >= exclusion_radius**2
     if not eligible.any():
         return None
-
+    # Use short goals only when no longer eligible approach is available.
+    longer = eligible & (distance >= 1.5)
+    if longer.any():
+        eligible = longer
     bearings = np.arctan2(ys - robot_y, xs - robot_x)
-    # Prefer nearby goals, with a penalty for turning or reversing.
-    score = distance + 0.65 * (1 - np.cos(bearings - robot_yaw))
-
+    # Prefer a useful forward leg over short hops or reversals. Nearby and
+    # behind-the-robot frontiers remain eligible when space is limited.
+    score = np.abs(distance - PREFERRED_GOAL_M) + 0.65 * (1 - np.cos(bearings - robot_yaw))
     best = int(np.argmin(np.where(eligible, score, np.inf)))
-    return float(xs[best]), float(ys[best]), float(bearings[best])
+    x, y = float(xs[best]), float(ys[best])
+    return x, y, float(bearings[best])
 
 
 def costmap_reachability(costs, geometry, x, y):

@@ -9,7 +9,11 @@ if [[ ! -f "$workspace_dir/install/setup.bash" ]]; then
     exit 1
 fi
 source "$workspace_dir/install/setup.bash"
-export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-78}"
+case "$(hostname -s)" in
+    swarm1) export ROS_DOMAIN_ID=79 ;;
+    swarm2) export ROS_DOMAIN_ID=78 ;;
+    *) echo "Expected hostname swarm1 or swarm2" >&2; exit 1 ;;
+esac
 
 if ! ros2 pkg prefix sllidar_ros2 >/dev/null; then
     printf 'sllidar_ros2 is missing from the sourced workspace. Build it in %s first.\n' "$workspace_dir" >&2

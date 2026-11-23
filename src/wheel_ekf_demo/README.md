@@ -1,5 +1,6 @@
 ### To run demo:
 ```bash
+source /opt/ros/kilted/setup.bash && ROS_DOMAIN_ID=79
 bash src/wheel_ekf_demo/start_nav2.sh robot_radius:=0.14   hardware_config:="$PWD/src/wheel_ekf_demo/hardware.yaml"
 ```
 
