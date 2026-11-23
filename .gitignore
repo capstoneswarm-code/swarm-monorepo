@@ -61,4 +61,7 @@ Desktop.ini
 *.swp
 *.swo
 
+diagnostics/
+benchmarks/
+
 **.generated.**
